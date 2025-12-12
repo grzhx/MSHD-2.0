@@ -1,12 +1,27 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from starlette.middleware.cors import CORSMiddleware
+
 from codec import codec
 from codec import dictionaries as dicts
 from codec.models import DecodedRecord
 
 app = FastAPI(title="MSHD2.0 Codec Service", version="0.1.0")
 
+origins = [
+    "http://localhost:3000",
+    "http://localhost:4200",
+]
+
+# 3. 将 CORS 中间件添加到您的应用中
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # 允许访问的源
+    allow_credentials=True,      # 支持 cookie
+    allow_methods=["*"],         # 允许所有方法 (GET, POST, etc.)
+    allow_headers=["*"],         # 允许所有请求头
+)
 
 class EncodeRequest(BaseModel):
     event: dict

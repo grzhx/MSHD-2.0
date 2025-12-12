@@ -14,6 +14,8 @@ import csv
 from io import StringIO
 from datetime import datetime, timedelta
 
+from starlette.middleware.cors import CORSMiddleware
+
 from .database import Base, engine, get_db
 from . import models, schemas
 from . import ingestion_service
@@ -25,6 +27,19 @@ Base.metadata.create_all(bind=engine)
 # 创建 FastAPI 实例
 app = FastAPI(title="多源灾情数据管理服务（模块3&4）", version="1.0.0")
 
+origins = [
+    "http://localhost:3000",
+    "http://localhost:4200",
+]
+
+# 3. 将 CORS 中间件添加到您的应用中
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # 允许访问的源
+    allow_credentials=True,      # 支持 cookie
+    allow_methods=["*"],         # 允许所有方法 (GET, POST, etc.)
+    allow_headers=["*"],         # 允许所有请求头
+)
 
 # ========== 模块 3：多源数据接入与校验 ==========
 
