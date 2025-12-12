@@ -1,0 +1,5 @@
+{
+  "name": "Disaster Management Dashboard",
+  "description": "A comprehensive and elegant frontend interface for visualizing and managing multi-source disaster data, including a dashboard, map view, detailed list view, and system monitoring capabilities.",
+  "requestFramePermissions": []
+}

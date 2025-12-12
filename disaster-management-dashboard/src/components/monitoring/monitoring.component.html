@@ -1,0 +1,76 @@
+
+<div class="space-y-8">
+  <!-- Data Source Monitoring -->
+  <div>
+    <h2 class="text-xl font-semibold mb-4 text-blue-400">数据源接入监控</h2>
+    <div class="bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-400">
+          <thead class="text-xs text-gray-300 uppercase bg-gray-700">
+            <tr>
+              <th scope="col" class="px-6 py-3">数据源</th>
+              <th scope="col" class="px-6 py-3">最近接收时间</th>
+              <th scope="col" class="px-6 py-3">最近24h条数</th>
+              <th scope="col" class="px-6 py-3">最近7天条数</th>
+              <th scope="col" class="px-6 py-3">错误条数</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if(monitoringData()?.dataSources; as sources) {
+              @for(source of sources; track source.name) {
+                <tr class="border-b border-gray-700">
+                  <th scope="row" class="px-6 py-4 font-medium text-white whitespace-nowrap">{{ source.name }}</th>
+                  <td class="px-6 py-4">{{ source.lastReceived }}</td>
+                  <td class="px-6 py-4">{{ source.count24h }}</td>
+                  <td class="px-6 py-4">{{ source.count7d }}</td>
+                  <td class="px-6 py-4">
+                    <span [class.text-red-500]="source.errors > 0" [class.text-green-500]="source.errors === 0">
+                      {{ source.errors }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Call Monitoring -->
+  <div>
+    <h2 class="text-xl font-semibold mb-4 text-blue-400">接口调用监控</h2>
+    <div class="bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-400">
+          <thead class="text-xs text-gray-300 uppercase bg-gray-700">
+            <tr>
+              <th scope="col" class="px-6 py-3">接口端点</th>
+              <th scope="col" class="px-6 py-3">调用方</th>
+              <th scope="col" class="px-6 py-3">请求次数</th>
+              <th scope="col" class="px-6 py-3">平均响应时间</th>
+              <th scope="col" class="px-6 py-3">错误率</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if(monitoringData()?.apiCalls; as calls) {
+              @for(call of calls; track call.endpoint) {
+                <tr class="border-b border-gray-700">
+                  <th scope="row" class="px-6 py-4 font-medium text-white whitespace-nowrap">{{ call.endpoint }}</th>
+                  <td class="px-6 py-4">{{ call.caller }}</td>
+                  <td class="px-6 py-4">{{ call.requests }}</td>
+                  <td class="px-6 py-4">{{ call.avgResponse }}</td>
+                  <td class="px-6 py-4">
+                    <span [class.text-red-500]="call.errorRate !== '0.0%'" [class.text-green-500]="call.errorRate === '0.0%'">
+                      {{ call.errorRate }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

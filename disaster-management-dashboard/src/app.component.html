@@ -1,0 +1,123 @@
+
+<div class="flex h-screen bg-gray-900 font-sans text-gray-200">
+  <!-- Sidebar -->
+  <aside 
+    [class.w-64]="sidebarOpen()" 
+    [class.w-20]="!sidebarOpen()" 
+    class="flex-shrink-0 bg-gray-800 text-gray-300 transition-all duration-300 ease-in-out">
+    <div class="flex flex-col h-full">
+      <!-- Logo -->
+      <div class="h-16 flex items-center justify-center border-b border-gray-700">
+        <div class="flex items-center space-x-2">
+          <svg class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          @if (sidebarOpen()) {
+            <span class="text-xl font-bold">灾情管理系统</span>
+          }
+        </div>
+      </div>
+      <!-- Navigation -->
+      <nav class="flex-1 mt-4 space-y-2 px-2">
+        @for (item of navItems; track item.id) {
+          <a (click)="changeView(item.id)" 
+             class="flex items-center p-3 rounded-lg cursor-pointer transition-colors duration-200"
+             [class.justify-start]="sidebarOpen()"
+             [class.justify-center]="!sidebarOpen()"
+             [class.bg-blue-500]="currentView() === item.id"
+             [class.text-white]="currentView() === item.id"
+             [class.hover:bg-gray-700]="currentView() !== item.id">
+            <span [innerHTML]="item.icon | safeHtml"></span>
+            @if (sidebarOpen()) {
+              <span class="ml-4 font-medium">{{ item.name }}</span>
+            }
+          </a>
+        }
+      </nav>
+      <!-- Footer -->
+      <div class="p-2 border-t border-gray-700">
+        <button (click)="toggleSidebar()" class="w-full flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors duration-200"
+          [class.justify-start]="sidebarOpen()"
+          [class.justify-center]="!sidebarOpen()">
+          @if (sidebarOpen()) {
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+            <span class="ml-4 font-medium">收起侧边栏</span>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          }
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-6">
+      <h1 class="text-2xl font-semibold">
+        @switch (currentView()) {
+          @case ('dashboard') { 总览大屏 }
+          @case ('map') { 地图视图 }
+          @case ('list') { 列表 + 详情视图 }
+          @case ('monitoring') { 运维管理 }
+          @case ('dictionary') { 字典与配置 }
+        }
+      </h1>
+      <div class="flex items-center space-x-6">
+        <!-- Backend Status -->
+        @if (backendStatus(); as status) {
+          <div class="flex items-center space-x-4 text-xs">
+            <div class="flex items-center space-x-2" title="编码服务 (端口 8000)">
+              <span class="font-medium">编码服务:</span>
+              @if (status.codec === 'Online') {
+                <span class="h-3 w-3 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-green-400">Online</span>
+              } @else {
+                <span class="h-3 w-3 rounded-full bg-red-500"></span>
+                <span class="text-red-400">Offline</span>
+              }
+            </div>
+            <div class="flex items-center space-x-2" title="灾情数据管理服务 (端口 8001)">
+               <span class="font-medium">数据服务:</span>
+              @if (status.disaster === 'Online') {
+                <span class="h-3 w-3 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-green-400">Online</span>
+              } @else {
+                <span class="h-3 w-3 rounded-full bg-red-500"></span>
+                <span class="text-red-400">Offline</span>
+              }
+            </div>
+          </div>
+        }
+
+        <button class="p-2 rounded-full hover:bg-gray-700">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        </button>
+        <div class="flex items-center">
+          <img class="h-10 w-10 rounded-full object-cover" src="https://picsum.photos/100" alt="User avatar">
+          <div class="ml-3">
+            <p class="text-sm font-medium">管理员</p>
+            <p class="text-xs text-gray-400">在线</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 p-6 overflow-auto">
+      @switch (currentView()) {
+        @case ('dashboard') { <app-dashboard></app-dashboard> }
+        @case ('map') { <app-map-view></app-map-view> }
+        @case ('list') { <app-list-view></app-list-view> }
+        @case ('monitoring') { <app-monitoring></app-monitoring> }
+        @case ('dictionary') { <app-dictionary></app-dictionary> }
+      }
+    </div>
+  </main>
+</div>

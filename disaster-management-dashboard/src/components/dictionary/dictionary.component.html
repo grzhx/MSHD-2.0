@@ -1,0 +1,62 @@
+
+<div class="bg-gray-800 rounded-lg shadow-md p-6">
+  <div class="mb-4 border-b border-gray-700">
+    <nav class="flex space-x-4 -mb-px" aria-label="Tabs">
+      <button (click)="setTab('source')"
+              [class.border-blue-500]="activeTab() === 'source'"
+              [class.text-blue-500]="activeTab() === 'source'"
+              [class.border-transparent]="activeTab() !== 'source'"
+              [class.text-gray-400]="activeTab() !== 'source'"
+              [class.hover:text-gray-200]="activeTab() !== 'source'"
+              [class.hover:border-gray-500]="activeTab() !== 'source'"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+        来源码
+      </button>
+      <button (click)="setTab('carrier')"
+              [class.border-blue-500]="activeTab() === 'carrier'"
+              [class.text-blue-500]="activeTab() === 'carrier'"
+              [class.border-transparent]="activeTab() !== 'carrier'"
+              [class.text-gray-400]="activeTab() !== 'carrier'"
+              [class.hover:text-gray-200]="activeTab() !== 'carrier'"
+              [class.hover:border-gray-500]="activeTab() !== 'carrier'"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+        载体码
+      </button>
+      <button (click)="setTab('disaster')"
+              [class.border-blue-500]="activeTab() === 'disaster'"
+              [class.text-blue-500]="activeTab() === 'disaster'"
+              [class.border-transparent]="activeTab() !== 'disaster'"
+              [class.text-gray-400]="activeTab() !== 'disaster'"
+              [class.hover:text-gray-200]="activeTab() !== 'disaster'"
+              [class.hover:border-gray-500]="activeTab() !== 'disaster'"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+        灾情大类/子类
+      </button>
+    </nav>
+  </div>
+  
+  <div>
+    @if (dictionaryData(); as data) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-400">
+          <thead class="text-xs text-gray-300 uppercase bg-gray-700">
+            <tr>
+              <th scope="col" class="px-6 py-3">代码</th>
+              <th scope="col" class="px-6 py-3">名称</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of data[activeTab()]; track item.code) {
+              <tr class="border-b border-gray-700">
+                <td class="px-6 py-4">{{ item.code }}</td>
+                <td class="px-6 py-4">{{ item.name }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="text-center py-8 text-gray-500">正在加载字典数据...</p>
+    }
+  </div>
+</div>
