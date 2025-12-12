@@ -1,0 +1,4 @@
+/* Global overrides for the dashboard build (keeps build from warning about missing stylesheet). */
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}

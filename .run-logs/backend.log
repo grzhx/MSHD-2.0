@@ -1,0 +1,65 @@
+INFO:     Will watch for changes in these directories: ['/Users/alpha/Desktop/vscode/软工理论/access-storage']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [31824] using StatReload
+/Users/alpha/Desktop/vscode/软工理论/access-storage/.venv/lib/python3.13/site-packages/pydantic/_internal/_config.py:383: UserWarning: Valid config keys have changed in V2:
+* 'orm_mode' has been renamed to 'from_attributes'
+  warnings.warn(message, UserWarning)
+INFO:     Started server process [31827]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2025-12-12 16:25:13,138 [INFO] disaster_backend - Incoming GET /health
+2025-12-12 16:25:13,141 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:25:13,143 [INFO] disaster_backend - Completed GET /health status=200
+INFO:     127.0.0.1:55258 - "GET /health HTTP/1.1" 200 OK
+2025-12-12 16:25:13,148 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:25:13,160 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55260 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:25:57,188 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:25:57,193 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:25:57,199 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55460 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:25:58,101 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:25:58,103 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:25:58,106 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55460 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:26:01,525 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:26:01,526 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:26:01,529 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55460 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:26:25,475 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:26:25,476 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:26:25,477 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55671 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:26:28,880 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:26:28,880 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:26:28,881 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55671 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:26:38,010 [INFO] disaster_backend - Incoming GET /api/dict/source
+2025-12-12 16:26:38,013 [INFO] app.codec_router - Dictionary domain=source flat=True
+2025-12-12 16:26:38,013 [INFO] disaster_backend - Incoming GET /api/dict/carrier
+2025-12-12 16:26:38,014 [INFO] disaster_backend - Incoming GET /api/dict/disaster
+2025-12-12 16:26:38,015 [INFO] app.codec_router - Dictionary domain=carrier flat=True
+2025-12-12 16:26:38,016 [INFO] disaster_backend - Completed GET /api/dict/source status=200
+INFO:     127.0.0.1:55695 - "GET /api/dict/source?flat=1 HTTP/1.1" 200 OK
+2025-12-12 16:26:38,016 [INFO] app.codec_router - Dictionary domain=disaster flat=True
+2025-12-12 16:26:38,017 [INFO] disaster_backend - Completed GET /api/dict/carrier status=200
+INFO:     127.0.0.1:55696 - "GET /api/dict/carrier?flat=1 HTTP/1.1" 200 OK
+2025-12-12 16:26:38,018 [INFO] disaster_backend - Completed GET /api/dict/disaster status=200
+INFO:     127.0.0.1:55697 - "GET /api/dict/disaster?flat=1 HTTP/1.1" 200 OK
+2025-12-12 16:26:39,815 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:26:39,815 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:26:39,816 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55695 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:26:40,426 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:26:40,427 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:26:40,428 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55696 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+2025-12-12 16:26:41,056 [INFO] disaster_backend - Incoming GET /api/storage/disaster-records
+2025-12-12 16:26:41,057 [INFO] disaster_backend - List disaster records limit=200 offset=0
+2025-12-12 16:26:41,060 [INFO] disaster_backend - Completed GET /api/storage/disaster-records status=200
+INFO:     127.0.0.1:55697 - "GET /api/storage/disaster-records?limit=200 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31827]
+INFO:     Stopping reloader process [31824]
