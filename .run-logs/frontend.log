@@ -1,28 +1,19 @@
 
-> disaster-management-dashboard@0.0.0 dev
-> ng serve --host 0.0.0.0 --port 3000
+> disaster-management-dashboard@0.0.0 start
+> ng serve --port 4200 --open false
 
-
-Warning: This is a simple server for use in testing or debugging Angular applications
-locally. It hasn't been reviewed for security issues.
-
-Binding this server to an open connection can result in compromising your application or
-computer. Using a different host than the one passed to the "--host" flag might result in
-websocket connection issues.
-    
 ❯ Building...
 ✔ Building...
 Initial chunk files | Names         |  Raw size
-main.js             | main          | 106.37 kB | 
+main.js             | main          | 137.01 kB | 
 
-                    | Initial total | 106.37 kB
+                    | Initial total | 137.01 kB
 
-Application bundle generation complete. [0.875 seconds] - 2025-12-12T08:25:06.487Z
+Lazy chunk files    | Names         |  Raw size
+main.css            | -             |  53 bytes | 
+
+Application bundle generation complete. [0.951 seconds] - 2025-12-13T14:09:52.839Z
 
 Watch mode enabled. Watching for file changes...
 NOTE: Raw file sizes do not reflect development server per-request transformations.
-  ➜  Local:   http://localhost:3000/
-  ➜  Network: http://10.29.2.153:3000/
-  ➜  Network: http://10.211.55.2:3000/
-  ➜  Network: http://10.37.129.2:3000/
-  ➜  Network: http://10.37.132.2:3000/
+  ➜  Local:   http://localhost:4200/

@@ -12,11 +12,104 @@
         <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
       </div>
     </div>
-    <button (click)="exportToCSV()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md flex items-center space-x-2 transition duration-200">
-      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-      <span>导出为 CSV</span>
-    </button>
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2 bg-gray-700 px-3 py-2 rounded-md">
+        <span class="text-sm text-gray-300">管理员密码</span>
+        <input type="password" placeholder="必填" (input)="updateAdminPassword($any($event.target).value)" class="bg-gray-600 border border-gray-500 rounded-md py-1 px-2 focus:ring-2 focus:ring-blue-500 w-32">
+      </div>
+      <button (click)="toggleManualForm()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md flex items-center space-x-2 transition duration-200">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+        <span>{{ showManualForm() ? '收起录入栏' : '手动写入数据' }}</span>
+      </button>
+      <button (click)="exportToCSV()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md flex items-center space-x-2 transition duration-200">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+        <span>导出为 CSV</span>
+      </button>
+    </div>
   </div>
+  @if (toast(); as msg) {
+    <div class="bg-gray-700 text-sm text-green-300 px-4 py-2 rounded border border-green-600">
+      {{ msg }}
+    </div>
+  }
+
+  @if (showManualForm()) {
+  <!-- Manual create form -->
+  <div class="bg-gray-800 p-4 rounded-lg shadow-md space-y-4">
+      <div>
+        <p class="font-semibold text-white">手动录入灾情数据</p>
+      <p class="text-xs text-gray-400">需满足编码规则：地点码12位、来源/载体/灾种编码符合字典，时间可填 YY/MM/DD 或 YY/MM/DD HH:mm UTC+8。</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>事件时间</span>
+        <input type="text" placeholder="YY/MM/DD 或 YY/MM/DD HH:mm UTC+8" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().event_time" (input)="updateField('event_time', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>纬度编码 (±纬度*1000)</span>
+        <input type="text" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().lat_code" (input)="updateField('lat_code', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>经度编码 (±经度*1000)</span>
+        <input type="text" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().lng_code" (input)="updateField('lng_code', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>来源码 (如 101)</span>
+        <input type="text" maxlength="3" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().source_code" (input)="updateField('source_code', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>载体码 (0=文字,1=图像...)</span>
+        <input type="text" maxlength="1" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().carrier_code" (input)="updateField('carrier_code', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>灾种大类码 (1-5)</span>
+        <input type="text" maxlength="1" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().disaster_category_code" (input)="updateField('disaster_category_code', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>灾种子类码 (2位)</span>
+        <input type="text" maxlength="2" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().disaster_sub_category_code" (input)="updateField('disaster_sub_category_code', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>指标码 (3位)</span>
+        <input type="text" maxlength="3" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().indicator_code" (input)="updateField('indicator_code', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>指标值</span>
+        <input type="number" step="any" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().value ?? ''" (input)="updateField('value', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>单位</span>
+        <input type="text" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().unit ?? ''" (input)="updateField('unit', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1">
+        <span>媒体路径 (可选)</span>
+        <input type="text" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().media_path ?? ''" (input)="updateField('media_path', $any($event.target).value)">
+      </label>
+      <label class="flex flex-col text-sm text-gray-300 space-y-1 md:col-span-2 lg:col-span-3">
+        <span>原始报文 / 备注</span>
+        <textarea rows="2" class="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500"
+          [value]="newRecord().raw_payload ?? ''" (input)="updateField('raw_payload', $any($event.target).value)"></textarea>
+      </label>
+      <div class="md:col-span-2 lg:col-span-3 flex items-center justify-end">
+        <button (click)="submitManual()" [disabled]="creating()" class="bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-bold py-2 px-6 rounded-md flex items-center space-x-2 transition duration-200">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+          <span>{{ creating() ? '写入中...' : '提交录入' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
   
   <!-- Table -->
   <div class="flex-1 bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -31,6 +124,7 @@
             <th scope="col" class="px-6 py-3">来源</th>
             <th scope="col" class="px-6 py-3">载体</th>
             <th scope="col" class="px-6 py-3">关键指标值</th>
+            <th scope="col" class="px-6 py-3 text-center">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -43,10 +137,17 @@
               <td class="px-6 py-4">{{ record.source }}</td>
               <td class="px-6 py-4">{{ record.carrier }}</td>
               <td class="px-6 py-4">{{ record.intensity }}</td>
+              <td class="px-6 py-4 text-center">
+                <button class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded-md disabled:opacity-60"
+                  [disabled]="deletingId() === record.id"
+                  (click)="deleteRecord(record, $event)">
+                  {{ deletingId() === record.id ? '删除中' : '删除' }}
+                </button>
+              </td>
             </tr>
           } @empty {
              <tr>
-                <td colspan="7" class="text-center py-8 text-gray-500">没有找到匹配的数据</td>
+                <td colspan="8" class="text-center py-8 text-gray-500">没有找到匹配的数据</td>
              </tr>
           }
         </tbody>
@@ -72,18 +173,25 @@
           <ul class="space-y-2 text-gray-300">
             <li><strong>时间:</strong> {{ record.time }}</li>
             <li><strong>地点:</strong> {{ record.location }}</li>
+            <li><strong>灾害类别:</strong> {{ record.disasterCategory }} <span *ngIf="record.disasterSubCategory">/ {{ record.disasterSubCategory }}</span></li>
             <li><strong>灾害类型:</strong> {{ record.disasterType }}</li>
             <li><strong>来源:</strong> {{ record.source }}</li>
             <li><strong>载体:</strong> {{ record.carrier }}</li>
+            <li><strong>指标:</strong> {{ record.indicatorName ?? '—' }}</li>
           </ul>
         </div>
         <div>
           <h3 class="font-semibold text-blue-400 mb-2">损失信息</h3>
-          <p class="bg-gray-700 p-3 rounded-md">{{ record.loss }}</p>
+          <p class="bg-gray-700 p-3 rounded-md">{{ record.loss || '无' }}</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-blue-400 mb-2">原始报文</h3>
+          <p class="bg-gray-700 p-3 rounded-md whitespace-pre-wrap text-sm">{{ record.rawPayload ?? '无' }}</p>
         </div>
         <div>
           <h3 class="font-semibold text-blue-400 mb-2">关键指标</h3>
-          <p><strong>烈度/等级:</strong> <span class="text-xl font-bold text-red-400">{{ record.intensity }}</span></p>
+          <p><strong>值:</strong> <span class="text-xl font-bold text-red-400">{{ record.intensity }}</span> <span class="text-sm text-gray-300">{{ record.unit ?? '' }}</span></p>
+          <p class="text-sm text-gray-400 mt-1"><strong>指标:</strong> {{ record.indicatorName ?? '—' }}</p>
         </div>
         <div>
           <h3 class="font-semibold text-blue-400 mb-2">多媒体资料</h3>

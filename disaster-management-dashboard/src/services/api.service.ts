@@ -1,45 +1,75 @@
 
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, forkJoin, map, catchError, tap } from 'rxjs';
+import { Observable, of, forkJoin, map, catchError } from 'rxjs';
 import { environment } from '../environments/environment';
 
-// Mock data models - In a real app, these would be in separate model files
+// 后端原始结构
+interface ApiDisasterRecord {
+  id: string;
+  event_time?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  last_accessed_at?: string | null;
+  lat_code?: string | null;
+  lng_code?: string | null;
+  source_code?: string | null;
+  source_name?: string | null;
+  carrier_code?: string | null;
+  carrier_name?: string | null;
+  disaster_category_code?: string | null;
+  disaster_category_name?: string | null;
+  disaster_sub_category_code?: string | null;
+  disaster_sub_category_name?: string | null;
+  indicator_code?: string | null;
+  indicator_name?: string | null;
+  value?: number | null;
+  unit?: string | null;
+  media_path?: string | null;
+  raw_payload?: string | null;
+}
+
 export interface DisasterRecord {
   id: string;
   time: string;
-  eventTime?: Date;
+  eventTimeRaw?: string | null;
+  createdAt?: string | null;
   location: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   disasterType: string;
-  disasterCategory: 'Geological' | 'Meteorological' | 'Flood' | 'Other';
+  disasterCategory: string;
+  disasterSubCategory?: string | null;
+  indicatorName?: string | null;
   source: string;
   carrier: string;
   intensity: number;
+  unit?: string | null;
   loss: string;
+  rawPayload?: string | null;
   media: { type: 'image' | 'video', url: string }[];
 }
 
-interface BackendDisasterRecord {
-  id: string;
-  event_time?: string;
-  location_code?: string;
-  location_name?: string;
-  source_code?: string;
-  source_name?: string;
-  carrier_code?: string;
-  carrier_name?: string;
-  disaster_category_code?: string;
-  disaster_category_name?: string;
-  disaster_sub_category_code?: string;
-  disaster_sub_category_name?: string;
-  indicator_code?: string;
-  indicator_name?: string;
-  value?: number;
-  unit?: string;
-  media_path?: string;
-  raw_payload?: string;
+export interface DashboardStats {
+  totalCount: number;
+  disasterDistribution: { labels: string[]; data: number[] };
+  sourceDistribution: { labels: string[]; data: number[] };
+  recentActivity: { labels: string[]; data: number[] };
+}
+
+export interface ManualRecordInput {
+  lat_code: string;
+  lng_code: string;
+  event_time: string | Date;
+  source_code: string;
+  carrier_code: string;
+  disaster_category_code: string;
+  disaster_sub_category_code: string;
+  indicator_code: string;
+  value?: number | null;
+  unit?: string | null;
+  media_path?: string | null;
+  raw_payload?: string | null;
 }
 
 @Injectable({
@@ -50,61 +80,42 @@ export class ApiService {
 
   private codecApiUrl = environment.codecApiUrl;
   private disasterApiUrl = environment.disasterApiUrl;
-  private fallbackRecords: DisasterRecord[] = [
-    { id: 'D-240730-1', time: '2024-07-30 14:30', location: '四川省阿坝州', lat: 31.7, lng: 103.5, disasterType: '地震', disasterCategory: 'Geological', source: '前方指挥部', carrier: '卫星电话', intensity: 7.2, loss: '房屋倒塌严重', media: [{ type: 'image', url: 'https://picsum.photos/seed/disaster1/400/300' }] },
-    { id: 'D-240730-2', time: '2024-07-30 08:15', location: '河南省郑州市', lat: 34.7, lng: 113.6, disasterType: '暴雨', disasterCategory: 'Flood', source: '舆情感知', carrier: '社交媒体', intensity: 4, loss: '城市内涝，交通中断', media: [{ type: 'video', url: '#' }] },
-    { id: 'D-240729-1', time: '2024-07-29 18:00', location: '福建省福州市', lat: 26.0, lng: 119.3, disasterType: '台风', disasterCategory: 'Meteorological', source: '气象预警', carrier: '官方发布', intensity: 9, loss: '大风导致树木倒伏', media: [{ type: 'image', url: 'https://picsum.photos/seed/disaster2/400/300' }] },
-    { id: 'D-240728-3', time: '2024-07-28 11:45', location: '云南省昆明市', lat: 25.0, lng: 102.7, disasterType: '山体滑坡', disasterCategory: 'Geological', source: '无人机勘测', carrier: '航拍数据', intensity: 6, loss: '道路中断', media: [{ type: 'image', url: 'https://picsum.photos/seed/disaster3/400/300' }] },
-    { id: 'D-240727-5', time: '2024-07-27 22:05', location: '河北省石家庄市', lat: 38.0, lng: 114.5, disasterType: '干旱', disasterCategory: 'Meteorological', source: '农业部门', carrier: '上报', intensity: 5, loss: '农作物受灾', media: [] },
-    { id: 'D-240726-1', time: '2024-07-26 15:20', location: '湖南省长沙市', lat: 28.2, lng: 112.9, disasterType: '洪涝', disasterCategory: 'Flood', source: '水利部门', carrier: '监测站', intensity: 8, loss: '河流超警戒水位', media: [{ type: 'video', url: '#' }] },
-    { id: 'D-240725-2', time: '2024-07-25 03:10', location: '新疆维吾尔自治区', lat: 43.8, lng: 87.6, disasterType: '沙尘暴', disasterCategory: 'Meteorological', source: '舆情感知', carrier: '社交媒体', intensity: 7, loss: '能见度低', media: [] },
-  ];
+  private locationCoordMap: Record<string, { lat: number; lng: number }> = {
+    '110000000001': { lat: 39.9042, lng: 116.4074 }, // 北京
+    '510823000000': { lat: 31.4769, lng: 103.4936 }, // 汶川县
+    '632700000000': { lat: 33.0039, lng: 97.0065 },  // 玉树州
+    '410100000000': { lat: 34.7466, lng: 113.6254 }, // 郑州
+    '623027000000': { lat: 35.4763, lng: 102.8616 }, // 积石山县
+    // 海外/示例事件编码（900...为自定义海外占位码）
+    '900000000001': { lat: 3.3167, lng: 95.8547 },   // 北苏门答腊近海（2004 印度洋海啸震中附近）
+    '900000000002': { lat: 38.297, lng: 142.372 },   // 日本宫城外海（2011 东北地震）
+    '900000000003': { lat: 27.7172, lng: 85.3240 },  // 尼泊尔加德满都
+    '900000000004': { lat: -6.093, lng: 105.423 },   // 巽他海峡 Anak Krakatoa 附近
+    '900000000005': { lat: 52.9, lng: 158.7 },       // 堪察加半岛外海
+    '900000000006': { lat: -8.576, lng: 116.100 },   // 印尼龙目岛
+    '900000000007': { lat: 40.9, lng: 141.5 },       // 日本青森外海
+  };
   
   // This method calculates stats on the frontend based on the full data list.
   // For large datasets, it's better to have a dedicated backend endpoint for stats.
-  getDashboardStats(): Observable<any> {
-    return this.getDisasterRecords().pipe(
-      map(records => {
-        const now = new Date();
-        const disasterCounts = records.reduce((acc, rec) => {
-          acc[rec.disasterCategory] = (acc[rec.disasterCategory] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+  getDashboardStats(): Observable<DashboardStats> {
+    const summary$ = this.http.get<DashboardStats>(`${this.disasterApiUrl}/dashboard/summary`).pipe(
+      catchError(err => {
+        console.error('Failed to fetch dashboard summary from backend:', err);
+        return of<DashboardStats | null>(null);
+      })
+    );
+    const records$ = this.getDisasterRecords();
 
-        const sourceCounts = records.reduce((acc, rec) => {
-          acc[rec.source] = (acc[rec.source] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-
-        const hoursWindow = 72;
-        const buckets = Array.from({ length: hoursWindow }, () => 0);
-        records.forEach(rec => {
-          const ts = rec.eventTime ?? now;
-          const hoursDiff = Math.floor((now.getTime() - ts.getTime()) / 3600000);
-          const idx = hoursWindow - 1 - hoursDiff;
-          if (idx >= 0 && idx < hoursWindow) {
-            buckets[idx] += 1;
-          }
-        });
-        const recentData = buckets.map((count, i) => {
-          const hour = new Date(now.getTime() - (hoursWindow - 1 - i) * 3600 * 1000);
-          return { time: `${hour.getHours()}:00`, count };
-        });
-
+    return forkJoin({ summary: summary$, records: records$ }).pipe(
+      map(({ summary, records }) => {
+        const computed = this.buildDashboardStats(records);
         return {
-          totalCount: records.length,
-          disasterDistribution: {
-            labels: Object.keys(disasterCounts),
-            data: Object.values(disasterCounts),
-          },
-          sourceDistribution: {
-            labels: Object.keys(sourceCounts),
-            data: Object.values(sourceCounts),
-          },
-          recentActivity: {
-            labels: recentData.map(d => d.time),
-            data: recentData.map(d => d.count),
-          }
+          totalCount: computed.totalCount,
+          disasterDistribution: summary?.disasterDistribution ?? computed.disasterDistribution,
+          sourceDistribution: summary?.sourceDistribution ?? computed.sourceDistribution,
+          // recentActivity 统一用本地按小时重新聚合，避免时区差异
+          recentActivity: computed.recentActivity,
         };
       })
     );
@@ -112,45 +123,88 @@ export class ApiService {
 
   /**
    * Fetches all disaster records.
+   * 后端新增 /api/storage/disaster-records 列表接口，返回 { total, items }。
    */
   getDisasterRecords(): Observable<DisasterRecord[]> {
-    return this.http.get<BackendDisasterRecord[]>(`${this.disasterApiUrl}/storage/disaster-records?limit=200`).pipe(
-      map(records => records.map(r => this.mapBackendRecord(r))),
-      tap(mapped => console.log(`[api] fetched ${mapped.length} records from backend`)),
+    return this.http.get<{ total: number, items: ApiDisasterRecord[] }>(
+      `${this.disasterApiUrl}/storage/disaster-records`,
+      { params: { limit: 200 } }
+    ).pipe(
+      map(res => (res.items || []).map(item => this.toUiRecord(item))),
       catchError(err => {
-        console.error('Failed to fetch disaster records, falling back to mock data:', err);
-        return of(this.fallbackRecords);
+        console.error('Failed to fetch disaster records:', err);
+        return of([]); // Return an empty array on error to prevent UI crash
       })
     );
   }
 
-  // Monitoring data remains mocked as no specific backend endpoints were provided for it.
   getMonitoringData() {
-    return of({
-      dataSources: [
-        { name: '前方指挥部', lastReceived: '2024-07-30 14:30', count24h: 1, count7d: 5, errors: 0 },
-        { name: '舆情感知', lastReceived: '2024-07-30 08:15', count24h: 2, count7d: 12, errors: 1 },
-        { name: '气象预警', lastReceived: '2024-07-29 18:00', count24h: 0, count7d: 3, errors: 0 },
-        { name: '无人机勘测', lastReceived: '2024-07-28 11:45', count24h: 0, count7d: 2, errors: 0 },
-      ],
-      apiCalls: [
-        { endpoint: '/api/ingest', caller: '数据采集模块', requests: 1250, avgResponse: '15ms', errorRate: '0.2%' },
-        { endpoint: '/api/codec/decode', caller: '数据展示模块', requests: 8730, avgResponse: '5ms', errorRate: '0.01%' },
-        { endpoint: '/api/storage/disaster-records', caller: '内部服务', requests: 450, avgResponse: '8ms', errorRate: '0.0%' },
-      ]
-    });
+    return this.http.get(`${this.disasterApiUrl}/monitoring/summary`).pipe(
+      catchError(err => {
+        console.error('Failed to fetch monitoring data:', err);
+        return of({ dataSources: [], apiCalls: [] });
+      })
+    );
+  }
+
+  /**
+   * 写入一条手动录入的灾情数据（原始模式），后端会调用编码服务生成 ID 并入库。
+   */
+  createManualRecord(input: ManualRecordInput, adminPassword: string): Observable<string> {
+    const eventTime = this.normalizeEventTime(input.event_time);
+
+    const payload = {
+      event: {
+        lat_code: input.lat_code,
+        lng_code: input.lng_code,
+        event_time: eventTime,
+        source_code: input.source_code,
+        carrier_code: input.carrier_code,
+        disaster_category_code: input.disaster_category_code,
+        disaster_sub_category_code: input.disaster_sub_category_code,
+        indicator_code: input.indicator_code,
+        value: input.value ?? null,
+        unit: input.unit ?? null,
+        media_path: input.media_path ?? null,
+        raw_payload: input.raw_payload ?? null
+      }
+    };
+
+    return this.http.post<{ id: string; status: string; message?: string }>(
+      `${this.disasterApiUrl}/ingest`,
+      payload,
+      { params: { mode: 'raw' }, headers: { 'X-Admin-Password': adminPassword } }
+    ).pipe(
+      map(res => res.id),
+      catchError(err => {
+        console.error('Failed to create manual record:', err);
+        throw err;
+      })
+    );
+  }
+
+  deleteRecord(recordId: string, adminPassword: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.disasterApiUrl}/storage/disaster-records/${recordId}`,
+      { headers: { 'X-Admin-Password': adminPassword } }
+    );
   }
 
   getDictionaryData(): Observable<any> {
-    const source$ = this.http.get<{code: string, name: string}[]>(`${this.codecApiUrl}/dict/source?flat=1`);
-    const carrier$ = this.http.get<{code: string, name: string}[]>(`${this.codecApiUrl}/dict/carrier?flat=1`);
-    const disaster$ = this.http.get<{code: string, name: string}[]>(`${this.codecApiUrl}/dict/disaster?flat=1`);
+    const source$ = this.http.get<Record<string, Record<string, string>>>(`${this.codecApiUrl}/dict/source`);
+    const carrier$ = this.http.get<Record<string, string>>(`${this.codecApiUrl}/dict/carrier`);
+    const disaster$ = this.http.get<Record<string, Record<string, string>>>(`${this.codecApiUrl}/dict/disaster`);
 
     return forkJoin({
       source: source$,
       carrier: carrier$,
       disaster: disaster$
     }).pipe(
+      map(res => ({
+        source: this.flattenSource(res.source),
+        carrier: this.flattenCarrier(res.carrier),
+        disaster: this.flattenDisaster(res.disaster)
+      })),
       catchError(err => {
         console.error('Failed to fetch dictionary data:', err);
         return of({ source: [], carrier: [], disaster: [] }); // Return empty data on error
@@ -160,74 +214,197 @@ export class ApiService {
 
   checkBackendStatus(): Observable<{ codec: string, disaster: string }> {
     // Construct the base URLs from the environment config to be more robust.
-    const unifiedBaseUrl = new URL(this.disasterApiUrl).origin; // unified backend
+    const codecBaseUrl = new URL(this.codecApiUrl).origin; // e.g., "http://localhost:8000"
+    const disasterBaseUrl = new URL(this.disasterApiUrl).origin; // e.g., "http://localhost:8001"
 
-    const healthCheck$ = this.http.get(`${unifiedBaseUrl}/health`, { responseType: 'text' }).pipe(
+    // Check the /health endpoint for the codec service.
+    const codecStatus$ = this.http.get(`${codecBaseUrl}/health`, { responseType: 'text' }).pipe(
       map(() => 'Online'),
-      catchError(err => {
-        console.warn('Backend health check failed:', err);
-        return of('Offline');
-      })
+      catchError(() => of('Offline'))
+    );
+    
+    // Disaster service 也提供 /health
+    const disasterStatus$ = this.http.get(`${disasterBaseUrl}/health`, { responseType: 'text' }).pipe(
+      map(() => 'Online'),
+      catchError(() => of('Offline'))
     );
 
     return forkJoin({
-      codec: healthCheck$,
-      disaster: healthCheck$
+      codec: codecStatus$,
+      disaster: disasterStatus$
     });
   }
 
-  private mapBackendRecord(rec: BackendDisasterRecord): DisasterRecord {
-    const eventTime = rec.event_time ? new Date(rec.event_time) : undefined;
-    const location = rec.location_name || rec.location_code || '未知地点';
-    const { lat, lng } = this.deriveCoordinates(rec.location_code);
-    const disasterCategory = this.mapDisasterCategory(rec.disaster_category_code, rec.disaster_category_name);
-    const loss = rec.raw_payload || rec.indicator_name || rec.disaster_category_name || '';
-    const media = rec.media_path ? [{ type: 'image' as const, url: rec.media_path }] : [];
-
+  private normalizeDashboardStats(data: DashboardStats | null | undefined): DashboardStats {
     return {
-      id: rec.id,
-      time: eventTime ? eventTime.toLocaleString() : '未知时间',
-      eventTime,
-      location,
-      lat,
-      lng,
-      disasterType: rec.disaster_category_name || '灾情',
-      disasterCategory,
-      source: rec.source_name || rec.source_code || '未知来源',
-      carrier: rec.carrier_name || rec.carrier_code || '未知载体',
-      intensity: rec.value ?? 0,
-      loss,
-      media,
+      totalCount: data?.totalCount ?? 0,
+      disasterDistribution: {
+        labels: data?.disasterDistribution?.labels ?? [],
+        data: data?.disasterDistribution?.data ?? [],
+      },
+      sourceDistribution: {
+        labels: data?.sourceDistribution?.labels ?? [],
+        data: data?.sourceDistribution?.data ?? [],
+      },
+      recentActivity: {
+        labels: data?.recentActivity?.labels ?? [],
+        data: data?.recentActivity?.data ?? [],
+      },
     };
   }
 
-  private mapDisasterCategory(code?: string, name?: string): DisasterRecord['disasterCategory'] {
-    if (name && /风|台风|气象|旱/.test(name)) return 'Meteorological';
-    if (name && /洪|雨|水/.test(name)) return 'Flood';
-    if (name && /滑坡|崩塌|泥石流/.test(name)) return 'Geological';
-    switch (code) {
-      case '1':
-      case '3':
-      case '5':
-        return 'Geological';
-      case '4':
-        return 'Flood';
-      case '0':
-      case '2':
-        return 'Other';
-      default:
-        return 'Other';
-    }
+  private buildDashboardStats(records: DisasterRecord[]): DashboardStats {
+    const disasterCounts = records.reduce((acc, rec) => {
+      const key = rec.disasterCategory || '其他';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const sourceCounts = records.reduce((acc, rec) => {
+      const key = rec.source || '未知来源';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const now = new Date();
+    const windowStart = new Date(now.getTime());
+    windowStart.setMinutes(0, 0, 0);
+    windowStart.setHours(windowStart.getHours() - 23); // 包含当前小时在内的最近 24h
+    const hourlyBuckets = Array.from({ length: 24 }, (_, i) => {
+      const bucket = new Date(windowStart.getTime() + i * 3600 * 1000);
+      return { time: bucket, count: 0 };
+    });
+
+    records.forEach(rec => {
+      const rawTime = rec.eventTimeRaw || rec.createdAt;
+      if (!rawTime) return;
+      const ts = new Date(rawTime);
+      if (Number.isNaN(ts.getTime())) return;
+
+      const diff = ts.getTime() - hourlyBuckets[0].time.getTime();
+      const bucketIndex = Math.floor(diff / (3600 * 1000));
+      if (bucketIndex >= 0 && bucketIndex < hourlyBuckets.length) {
+        hourlyBuckets[bucketIndex].count += 1;
+      }
+    });
+
+    return {
+      totalCount: records.length,
+      disasterDistribution: {
+        labels: Object.keys(disasterCounts),
+        data: Object.values(disasterCounts),
+      },
+      sourceDistribution: {
+        labels: Object.keys(sourceCounts),
+        data: Object.values(sourceCounts),
+      },
+      recentActivity: {
+        labels: hourlyBuckets.map(bucket => this.formatHourLabel(bucket.time)),
+        data: hourlyBuckets.map(bucket => bucket.count),
+      },
+    };
   }
 
-  private deriveCoordinates(locationCode?: string): { lat: number; lng: number } {
-    if (!locationCode || locationCode.length < 4 || Number.isNaN(Number(locationCode))) {
-      return { lat: 30.6, lng: 104.0 }; // 成都附近作为默认中心
+  private formatHourLabel(date: Date): string {
+    return `${date.getHours().toString().padStart(2, '0')}:00`;
+  }
+
+  private normalizeEventTime(raw: string | Date): string {
+    if (raw instanceof Date) {
+      return raw.toISOString();
     }
-    const codeNum = Number(locationCode.slice(-6));
-    // 生成一个稳定但分散的坐标，避免所有点重叠
-    const lat = 20 + (codeNum % 1500) / 50; // 约 20-50 度
-    const lng = 90 + (codeNum % 2000) / 30; // 约 90-156 度
-    return { lat, lng };
+    const trimmed = (raw || '').trim();
+    if (!trimmed) return new Date().toISOString();
+
+    // 支持 "YY/MM/DD HH:mm UTC+8" 或 "YY/MM/DD UTC+8"
+    const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{2})(?:\s+(\d{2}):(\d{2}))?\s*(?:UTC\+8)?$/i);
+    if (match) {
+      const [, yy, mm, dd, hh = '00', mi = '00'] = match;
+      const fullYear = 2000 + Number(yy);
+      const month = Number(mm);
+      const day = Number(dd);
+      const hour = Number(hh);
+      const minute = Number(mi);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${fullYear}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:00+08:00`;
+    }
+
+    // 其他格式尝试直接解析
+    const date = new Date(trimmed);
+    return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  }
+
+  private parseCoord(code: string | null | undefined): number | null {
+    if (!code) return null;
+    const num = Number(code);
+    if (!Number.isFinite(num)) return null;
+    return num / 1000;
+  }
+
+  private toUiRecord(api: ApiDisasterRecord): DisasterRecord {
+    const time = api.event_time ? new Date(api.event_time).toLocaleString() : '未知时间';
+    const latValue = this.parseCoord(api.lat_code);
+    const lngValue = this.parseCoord(api.lng_code);
+    const location = (latValue !== null && lngValue !== null)
+      ? `${latValue.toFixed(3)}, ${lngValue.toFixed(3)}`
+      : '未知地点';
+    const indicatorName = api.indicator_name || '';
+    const disasterCategory = api.disaster_category_name || '其他';
+    const disasterSubCategory = api.disaster_sub_category_name || null;
+    const disasterType = disasterSubCategory || disasterCategory || indicatorName || '其他';
+    const loss = indicatorName && api.value != null
+      ? `${indicatorName}: ${api.value}${api.unit ?? ''}`
+      : (api.unit || indicatorName || '');
+    const intensity = api.value ?? 0;
+
+    return {
+      id: api.id,
+      time,
+      eventTimeRaw: api.event_time || null,
+      createdAt: api.created_at || null,
+      location,
+      lat: latValue,
+      lng: lngValue,
+      disasterType,
+      disasterCategory,
+      disasterSubCategory,
+      indicatorName: indicatorName || null,
+      source: api.source_name || api.source_code || '未知来源',
+      carrier: api.carrier_name || api.carrier_code || '未知载体',
+      intensity,
+      unit: api.unit || null,
+      loss,
+      rawPayload: api.raw_payload || null,
+      media: api.media_path ? [{ type: 'image', url: api.media_path }] : [],
+    };
+  }
+
+  private flattenSource(dictObj: Record<string, Record<string, string>> | null | undefined) {
+    const result: { code: string, name: string }[] = [];
+    if (!dictObj) return result;
+    Object.entries(dictObj).forEach(([cat, subMap]) => {
+      Object.entries(subMap).forEach(([sub, name]) => {
+        result.push({ code: `${cat}${sub}`, name });
+      });
+    });
+    return result;
+  }
+
+  private flattenCarrier(dictObj: Record<string, string> | null | undefined) {
+    const result: { code: string, name: string }[] = [];
+    if (!dictObj) return result;
+    Object.entries(dictObj).forEach(([code, name]) => result.push({ code, name }));
+    return result;
+  }
+
+  private flattenDisaster(dictObj: Record<string, Record<string, string>> | null | undefined) {
+    const result: { code: string, name: string }[] = [];
+    if (!dictObj) return result;
+    Object.entries(dictObj).forEach(([cat, subMap]) => {
+      Object.entries(subMap).forEach(([sub, name]) => {
+        result.push({ code: `${cat}${sub}`, name });
+      });
+    });
+    return result;
   }
 }

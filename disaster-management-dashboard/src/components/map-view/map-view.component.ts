@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, afterNextRender, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService, DisasterRecord } from '../../services/api.service';
 
@@ -12,7 +12,7 @@ declare var L: any;
   templateUrl: './map-view.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MapViewComponent {
+export class MapViewComponent implements AfterViewInit, OnDestroy {
   private apiService = inject(ApiService);
   private map: any;
 
@@ -23,11 +23,15 @@ export class MapViewComponent {
     'Other': '#6B7280', // gray-500
   };
   
-  constructor() {
-    afterNextRender(() => {
-      this.initMap();
-      this.loadDisasterPoints();
-    });
+  ngAfterViewInit(): void {
+    this.initMap();
+    this.loadDisasterPoints();
+  }
+
+  ngOnDestroy(): void {
+    if (this.map) {
+      this.map.remove();
+    }
   }
 
   private initMap(): void {
@@ -36,9 +40,8 @@ export class MapViewComponent {
       zoom: 5
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19
     }).addTo(this.map);
   }
@@ -52,8 +55,12 @@ export class MapViewComponent {
   }
 
   private addMarker(record: DisasterRecord): void {
-    const color = this.categoryColors[record.disasterCategory] || '#FFFFFF';
-    const radius = 5 + record.intensity; // Adjust size based on intensity
+    if (record.lat === null || record.lng === null) {
+        return; // 没有坐标信息则跳过绘制
+    }
+    const color = this.categoryColors[record.disasterCategory] || '#3B82F6';
+    const safeIntensity = Number.isFinite(record.intensity) ? record.intensity : 0;
+    const radius = Math.min(20, Math.max(5, 5 + safeIntensity)); // clamp to avoid oversized circles
     
     const marker = L.circleMarker([record.lat, record.lng], {
       radius: radius,

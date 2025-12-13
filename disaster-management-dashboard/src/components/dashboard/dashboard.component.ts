@@ -1,9 +1,8 @@
 
-import { Component, ChangeDetectionStrategy, ElementRef, viewChild, afterNextRender, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, viewChild, inject, signal, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService } from '../../services/api.service';
-
-declare var Chart: any;
+import Chart from 'chart.js/auto';
+import { ApiService, DashboardStats } from '../../services/api.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,10 +11,15 @@ declare var Chart: any;
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent {
+export class DashboardComponent implements AfterViewInit, OnDestroy {
   private apiService = inject(ApiService);
   
-  stats = signal<any>(null);
+  stats = signal<DashboardStats | null>(null);
+  recent24hCount = signal<number>(0);
+  private viewReady = signal(false);
+  private barChart?: Chart;
+  private pieChart?: Chart;
+  private lineChart?: Chart;
 
   barChartEl = viewChild<ElementRef<HTMLCanvasElement>>('barChart');
   pieChartEl = viewChild<ElementRef<HTMLCanvasElement>>('pieChart');
@@ -24,20 +28,41 @@ export class DashboardComponent {
   constructor() {
     this.apiService.getDashboardStats().subscribe(data => {
       this.stats.set(data);
-      afterNextRender(() => {
-        this.createBarChart();
-        this.createPieChart();
-        this.createLineChart();
-      });
+      this.recent24hCount.set((data.recentActivity?.data || []).reduce((sum, n) => sum + n, 0));
+      this.tryRenderCharts();
     });
   }
 
-  createBarChart() {
+  ngAfterViewInit(): void {
+    this.viewReady.set(true);
+    this.tryRenderCharts();
+  }
+
+  ngOnDestroy(): void {
+    this.barChart?.destroy();
+    this.pieChart?.destroy();
+    this.lineChart?.destroy();
+  }
+
+  private tryRenderCharts(): void {
+    if (!this.viewReady() || !this.stats()) {
+      return;
+    }
+    queueMicrotask(() => {
+      this.createBarChart();
+      this.createPieChart();
+      this.createLineChart();
+    });
+  }
+
+  private createBarChart() {
     const canvas = this.barChartEl()?.nativeElement;
     const data = this.stats()?.disasterDistribution;
     if (!canvas || !data) return;
+
+    this.barChart?.destroy();
     
-    new Chart(canvas, {
+    this.barChart = new Chart(canvas, {
       type: 'bar',
       data: {
         labels: data.labels,
@@ -68,12 +93,14 @@ export class DashboardComponent {
     });
   }
 
-  createPieChart() {
+  private createPieChart() {
     const canvas = this.pieChartEl()?.nativeElement;
     const data = this.stats()?.sourceDistribution;
     if (!canvas || !data) return;
 
-    new Chart(canvas, {
+    this.pieChart?.destroy();
+
+    this.pieChart = new Chart(canvas, {
       type: 'pie',
       data: {
         labels: data.labels,
@@ -95,12 +122,14 @@ export class DashboardComponent {
     });
   }
 
-  createLineChart() {
+  private createLineChart() {
     const canvas = this.lineChartEl()?.nativeElement;
     const data = this.stats()?.recentActivity;
     if (!canvas || !data) return;
 
-    new Chart(canvas, {
+    this.lineChart?.destroy();
+
+    this.lineChart = new Chart(canvas, {
       type: 'line',
       data: {
         labels: data.labels.slice(-24), // Show last 24h
