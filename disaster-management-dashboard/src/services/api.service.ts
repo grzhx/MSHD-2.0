@@ -276,10 +276,10 @@ export class ApiService {
     });
 
     records.forEach(rec => {
-      const rawTime = rec.eventTimeRaw || rec.createdAt;
-      if (!rawTime) return;
-      const ts = new Date(rawTime);
-      if (Number.isNaN(ts.getTime())) return;
+      // 对于历史事件（事件时间可能很早），以写入时间优先计入 24h 新增
+      const rawTime = rec.createdAt || rec.eventTimeRaw;
+      const ts = this.parseDateValue(rawTime);
+      if (!ts) return;
 
       const diff = ts.getTime() - hourlyBuckets[0].time.getTime();
       const bucketIndex = Math.floor(diff / (3600 * 1000));
@@ -342,7 +342,8 @@ export class ApiService {
   }
 
   private toUiRecord(api: ApiDisasterRecord): DisasterRecord {
-    const time = api.event_time ? new Date(api.event_time).toLocaleString() : '未知时间';
+    const parsedEvent = this.parseDateValue(api.event_time);
+    const time = parsedEvent ? parsedEvent.toLocaleString() : '未知时间';
     const latValue = this.parseCoord(api.lat_code);
     const lngValue = this.parseCoord(api.lng_code);
     const location = (latValue !== null && lngValue !== null)
@@ -406,5 +407,16 @@ export class ApiService {
       });
     });
     return result;
+  }
+
+  private parseDateValue(raw: string | Date | null | undefined): Date | null {
+    if (!raw) return null;
+    if (raw instanceof Date) return raw;
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const hasTZ = /[Zz]|[+-]\d{2}:\d{2}$/.test(trimmed);
+    const iso = hasTZ ? trimmed : `${trimmed}Z`; // 后端 UTC 时间若缺时区标记，则按 UTC 解析
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 }
